@@ -1,18 +1,15 @@
 const vehicleService = require("../services/vehicleService")
 
 class VehicleController {
- 
   async getCurrentLocation(req, res) {
     try {
       const location = await vehicleService.getCurrentLocation()
-
       res.json({
         success: true,
         location,
         message: "Current location retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting current location:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get current location",
@@ -21,18 +18,15 @@ class VehicleController {
     }
   }
 
-  
   async getVehicleStats(req, res) {
     try {
       const stats = await vehicleService.getVehicleStats()
-
       res.json({
         success: true,
         stats,
         message: "Vehicle statistics retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting vehicle stats:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get vehicle statistics",
@@ -41,12 +35,10 @@ class VehicleController {
     }
   }
 
-  
   async getRouteByDate(req, res) {
     try {
       const { date } = req.params
       const route = await vehicleService.getRouteByDate(date)
-
       res.json({
         success: true,
         route,
@@ -55,7 +47,6 @@ class VehicleController {
         message: "Route data retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting route by date:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get route data",
@@ -64,12 +55,10 @@ class VehicleController {
     }
   }
 
-  
   async getLocationHistory(req, res) {
     try {
       const { limit = 50 } = req.query
       const history = await vehicleService.getLocationHistory(Number.parseInt(limit))
-
       res.json({
         success: true,
         history,
@@ -77,7 +66,6 @@ class VehicleController {
         message: "Location history retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting location history:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get location history",
@@ -86,18 +74,15 @@ class VehicleController {
     }
   }
 
-
   async getCompleteRoute(req, res) {
     try {
       const route = await vehicleService.getCompleteRoute()
-
       res.json({
         success: true,
         route,
         message: "Complete route data retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting complete route:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get complete route",
@@ -106,7 +91,6 @@ class VehicleController {
     }
   }
 
-  
   async updateLocation(req, res) {
     try {
       const { latitude, longitude, speed } = req.body
@@ -126,7 +110,6 @@ class VehicleController {
         message: "Location updated successfully",
       })
     } catch (error) {
-      console.error("Error updating location:", error)
       res.status(500).json({
         success: false,
         message: "Failed to update location",
@@ -135,7 +118,6 @@ class VehicleController {
     }
   }
 
-  
   async getVehicleById(req, res) {
     try {
       const { vehicleId } = req.params
@@ -154,7 +136,6 @@ class VehicleController {
         message: "Vehicle data retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting vehicle by ID:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get vehicle data",
@@ -163,11 +144,9 @@ class VehicleController {
     }
   }
 
-  
   async getAllVehicles(req, res) {
     try {
       const vehicles = await vehicleService.getAllVehicles()
-
       res.json({
         success: true,
         vehicles,
@@ -175,7 +154,6 @@ class VehicleController {
         message: "All vehicles retrieved successfully",
       })
     } catch (error) {
-      console.error("Error getting all vehicles:", error)
       res.status(500).json({
         success: false,
         message: "Failed to get vehicles",

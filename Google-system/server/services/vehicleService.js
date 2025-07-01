@@ -1,6 +1,6 @@
 const Vehicle = require("../models/Vehicle");
 const dummyLocations = require("../data/dummyLocations.json");
-const { format, startOfDay, endOfDay, subDays } = require("date-fns");
+const { startOfDay, endOfDay, subDays } = require("date-fns");
 
 class VehicleService {
   constructor() {
@@ -35,12 +35,9 @@ class VehicleService {
 
         await vehicle.save();
         await this.generateHistoricalData();
-        console.log("✅ Dummy vehicle data initialized with historical routes");
-      } else {
-        console.log("✅ Vehicle data already exists");
       }
-    } catch (error) {
-      console.error("❌ Error initializing dummy data:", error);
+    } catch (_) {
+      
     }
   }
 
@@ -57,9 +54,8 @@ class VehicleService {
       }
 
       await vehicle.save();
-      console.log("✅ Historical route data generated for last 7 days");
-    } catch (error) {
-      console.error("❌ Error generating historical data:", error);
+    } catch (_) {
+      
     }
   }
 
@@ -85,97 +81,89 @@ class VehicleService {
     this.simulationInterval = setInterval(async () => {
       try {
         await this.simulateMovement();
-      } catch (error) {
-        console.error("Error in location simulation:", error);
+      } catch (_) {
+        
       }
     }, 5000);
-
-    console.log("🚗 Vehicle location simulation started");
   }
-async simulateMovement() {
-  try {
-    if (this.currentLocationIndex >= dummyLocations.length) {
-      this.currentLocationIndex = 0;
-    }
 
-    const baseLocation = dummyLocations[this.currentLocationIndex];
-    const speed = Math.floor(Math.random() * 60) + 20;
+  async simulateMovement() {
+    try {
+      if (this.currentLocationIndex >= dummyLocations.length) {
+        this.currentLocationIndex = 0;
+      }
 
-    const newLocation = {
-      latitude: baseLocation.latitude + (Math.random() * 0.0001 - 0.00005),
-      longitude: baseLocation.longitude + (Math.random() * 0.0001 - 0.00005),
-      timestamp: new Date(),
-      speed,
-    };
+      const baseLocation = dummyLocations[this.currentLocationIndex];
+      const speed = Math.floor(Math.random() * 60) + 20;
 
-    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+      const newLocation = {
+        latitude: baseLocation.latitude + (Math.random() * 0.0001 - 0.00005),
+        longitude: baseLocation.longitude + (Math.random() * 0.0001 - 0.00005),
+        timestamp: new Date(),
+        speed,
+      };
 
-    if (vehicle) {
-      const prevLocation = vehicle.currentLocation;
-      let distanceIncrement = 0;
+      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
 
-      if (prevLocation) {
-        distanceIncrement = this.calculateDistance(
-          prevLocation.latitude,
-          prevLocation.longitude,
-          newLocation.latitude,
-          newLocation.longitude
+      if (vehicle) {
+        const prevLocation = vehicle.currentLocation;
+        let distanceIncrement = 0;
+
+        if (prevLocation) {
+          distanceIncrement = this.calculateDistance(
+            prevLocation.latitude,
+            prevLocation.longitude,
+            newLocation.latitude,
+            newLocation.longitude
+          );
+        }
+
+        const updatedStats = vehicle.stats || {
+          currentSpeed: 0,
+          distanceCovered: 0,
+          batteryLevel: 100,
+          lastUpdated: new Date(),
+        };
+
+        updatedStats.currentSpeed = speed;
+        updatedStats.distanceCovered += distanceIncrement;
+        updatedStats.batteryLevel = Math.max(0, updatedStats.batteryLevel - 0.1);
+        updatedStats.lastUpdated = new Date();
+
+        await Vehicle.updateOne(
+          { vehicleId: "VEHICLE_001" },
+          {
+            $set: {
+              currentLocation: newLocation,
+              stats: updatedStats,
+              lastUpdated: new Date(),
+            },
+            $push: {
+              locationHistory: {
+                $each: [newLocation],
+                $slice: -1000,
+              },
+            },
+          }
         );
       }
 
-      const updatedStats = vehicle.stats || {
-        currentSpeed: 0,
-        distanceCovered: 0,
-        batteryLevel: 100,
-        lastUpdated: new Date(),
-      };
-
-      updatedStats.currentSpeed = speed;
-      updatedStats.distanceCovered += distanceIncrement;
-      updatedStats.batteryLevel = Math.max(0, updatedStats.batteryLevel - 0.1);
-      updatedStats.lastUpdated = new Date();
-
-      await Vehicle.updateOne(
-        { vehicleId: "VEHICLE_001" },
-        {
-          $set: {
-            currentLocation: newLocation,
-            stats: updatedStats,
-            lastUpdated: new Date(),
-          },
-          $push: {
-            locationHistory: {
-              $each: [newLocation],
-              $slice: -1000, // Keep latest 1000 records
-            },
-          },
-        }
-      );
-
-      console.log(
-        `📍 Vehicle moved to: ${newLocation.latitude.toFixed(6)}, ${newLocation.longitude.toFixed(6)} at ${speed} km/h`
-      );
+      this.currentLocationIndex++;
+    } catch (_) {
+      
     }
-
-    this.currentLocationIndex++;
-  } catch (error) {
-    console.error("Error simulating movement:", error);
   }
-}
 
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
     const dLat = this.deg2rad(lat2 - lat1);
     const dLon = this.deg2rad(lon2 - lon1);
     const a =
-      Math.sin(dLat / 2) * Math.sin(dLat / 2) +
-      Math.cos(this.deg2rad(lat1)) *
-        Math.cos(this.deg2rad(lat2)) *
-        Math.sin(dLon / 2) *
-        Math.sin(dLon / 2);
+      Math.sin(dLat / 2) ** 2 +
+      Math.cos(this.deg2rad(lat1)) * Math.cos(this.deg2rad(lat2)) *
+      Math.sin(dLon / 2) ** 2;
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const d = R * c;
-    return d;
+    return R * c;
   }
 
   deg2rad(deg) {
@@ -183,145 +171,112 @@ async simulateMovement() {
   }
 
   async getCurrentLocation() {
-    try {
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
-      if (!vehicle) throw new Error("Vehicle not found");
-      return vehicle.currentLocation;
-    } catch (error) {
-      throw new Error(`Failed to get current location: ${error.message}`);
-    }
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (!vehicle) throw new Error("Vehicle not found");
+    return vehicle.currentLocation;
   }
 
   async getVehicleStats() {
-    try {
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
-      if (!vehicle) throw new Error("Vehicle not found");
-      return vehicle.stats;
-    } catch (error) {
-      throw new Error(`Failed to get vehicle statistics: ${error.message}`);
-    }
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (!vehicle) throw new Error("Vehicle not found");
+    return vehicle.stats;
   }
 
   async getRouteByDate(dateString) {
-    try {
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
-      if (!vehicle) throw new Error("Vehicle not found");
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (!vehicle) throw new Error("Vehicle not found");
 
-      const targetDate = new Date(dateString);
-      const dayStart = startOfDay(targetDate);
-      const dayEnd = endOfDay(targetDate);
+    const targetDate = new Date(dateString);
+    const dayStart = startOfDay(targetDate);
+    const dayEnd = endOfDay(targetDate);
 
-      const dayRoute = vehicle.locationHistory.filter((location) => {
-        const locationDate = new Date(location.timestamp);
-        return locationDate >= dayStart && locationDate <= dayEnd;
-      });
+    const dayRoute = vehicle.locationHistory.filter((location) => {
+      const locationDate = new Date(location.timestamp);
+      return locationDate >= dayStart && locationDate <= dayEnd;
+    });
 
-      return dayRoute.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
-    } catch (error) {
-      throw new Error(`Failed to get route by date: ${error.message}`);
-    }
+    return dayRoute.sort((a, b) => new Date(a.timestamp) - new Date(b.timestamp));
   }
 
   async getLocationHistory(limit = 50) {
-    try {
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
-      if (!vehicle) throw new Error("Vehicle not found");
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (!vehicle) throw new Error("Vehicle not found");
 
-      return vehicle.locationHistory
-        .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
-        .slice(0, limit);
-    } catch (error) {
-      throw new Error(`Failed to get location history: ${error.message}`);
-    }
+    return vehicle.locationHistory
+      .sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))
+      .slice(0, limit);
   }
 
   async getCompleteRoute() {
-    try {
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
-      if (!vehicle) throw new Error("Vehicle not found");
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (!vehicle) throw new Error("Vehicle not found");
 
-      return {
-        vehicleId: vehicle.vehicleId,
-        name: vehicle.name,
-        currentLocation: vehicle.currentLocation,
-        locationHistory: vehicle.locationHistory,
-        stats: vehicle.stats,
-        totalPoints: vehicle.locationHistory.length,
-        isActive: vehicle.isActive,
-        lastUpdated: vehicle.lastUpdated,
-      };
-    } catch (error) {
-      throw new Error(`Failed to get complete route: ${error.message}`);
-    }
+    return {
+      vehicleId: vehicle.vehicleId,
+      name: vehicle.name,
+      currentLocation: vehicle.currentLocation,
+      locationHistory: vehicle.locationHistory,
+      stats: vehicle.stats,
+      totalPoints: vehicle.locationHistory.length,
+      isActive: vehicle.isActive,
+      lastUpdated: vehicle.lastUpdated,
+    };
   }
 
   async updateLocation(latitude, longitude, speed = 0) {
-    try {
-      const newLocation = {
+    const newLocation = {
+      latitude,
+      longitude,
+      timestamp: new Date(),
+      speed,
+    };
+
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (!vehicle) throw new Error("Vehicle not found");
+
+    const prevLocation = vehicle.currentLocation;
+    let distanceIncrement = 0;
+
+    if (prevLocation) {
+      distanceIncrement = this.calculateDistance(
+        prevLocation.latitude,
+        prevLocation.longitude,
         latitude,
-        longitude,
-        timestamp: new Date(),
-        speed,
-      };
-
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
-      if (!vehicle) throw new Error("Vehicle not found");
-
-      const prevLocation = vehicle.currentLocation;
-      let distanceIncrement = 0;
-
-      if (prevLocation) {
-        distanceIncrement = this.calculateDistance(
-          prevLocation.latitude,
-          prevLocation.longitude,
-          latitude,
-          longitude
-        );
-      }
-
-      if (!vehicle.stats) {
-        vehicle.stats = {
-          currentSpeed: 0,
-          distanceCovered: 0,
-          batteryLevel: 100,
-          lastUpdated: new Date(),
-        };
-      }
-
-      vehicle.currentLocation = newLocation;
-      vehicle.locationHistory.push(newLocation);
-      vehicle.stats.currentSpeed = speed;
-      vehicle.stats.distanceCovered += distanceIncrement;
-      vehicle.stats.lastUpdated = new Date();
-      vehicle.lastUpdated = new Date();
-
-      await vehicle.save();
-      return vehicle;
-    } catch (error) {
-      throw new Error(`Failed to update location: ${error.message}`);
+        longitude
+      );
     }
+
+    if (!vehicle.stats) {
+      vehicle.stats = {
+        currentSpeed: 0,
+        distanceCovered: 0,
+        batteryLevel: 100,
+        lastUpdated: new Date(),
+      };
+    }
+
+    vehicle.currentLocation = newLocation;
+    vehicle.locationHistory.push(newLocation);
+    vehicle.stats.currentSpeed = speed;
+    vehicle.stats.distanceCovered += distanceIncrement;
+    vehicle.stats.lastUpdated = new Date();
+    vehicle.lastUpdated = new Date();
+
+    await vehicle.save();
+    return vehicle;
   }
 
   async getVehicleById(vehicleId) {
-    try {
-      return await Vehicle.findOne({ vehicleId });
-    } catch (error) {
-      throw new Error(`Failed to get vehicle: ${error.message}`);
-    }
+    return await Vehicle.findOne({ vehicleId });
   }
 
   async getAllVehicles() {
-    try {
-      return await Vehicle.find({});
-    } catch (error) {
-      throw new Error(`Failed to get vehicles: ${error.message}`);
-    }
+    return await Vehicle.find({});
   }
 
   stopSimulation() {
     if (this.simulationInterval) {
       clearInterval(this.simulationInterval);
-      console.log("🛑 Vehicle location simulation stopped");
     }
   }
 }
