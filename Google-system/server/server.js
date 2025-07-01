@@ -6,7 +6,4 @@ connectDB()
 
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`)
-  console.log(`📍 Vehicle tracking API available at http://localhost:${PORT}/api`)
-  console.log(`🗺️  OpenStreetMap integration enabled (100% Free!)`)
-  console.log(`✅ No API keys required`)
 })
