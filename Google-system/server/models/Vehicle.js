@@ -78,7 +78,7 @@ const vehicleSchema = new mongoose.Schema(
 )
 
 // Index for better query performance
-vehicleSchema.index({ vehicleId: 1 })
+// vehicleSchema.index({ vehicleId: 1 })
 vehicleSchema.index({ "currentLocation.timestamp": -1 })
 vehicleSchema.index({ "locationHistory.timestamp": -1 })
 

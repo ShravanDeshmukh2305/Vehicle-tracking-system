@@ -92,71 +92,76 @@ class VehicleService {
 
     console.log("🚗 Vehicle location simulation started");
   }
+async simulateMovement() {
+  try {
+    if (this.currentLocationIndex >= dummyLocations.length) {
+      this.currentLocationIndex = 0;
+    }
 
-  async simulateMovement() {
-    try {
-      if (this.currentLocationIndex >= dummyLocations.length) {
-        this.currentLocationIndex = 0;
-      }
+    const baseLocation = dummyLocations[this.currentLocationIndex];
+    const speed = Math.floor(Math.random() * 60) + 20;
 
-      const baseLocation = dummyLocations[this.currentLocationIndex];
-      const speed = Math.floor(Math.random() * 60) + 20;
+    const newLocation = {
+      latitude: baseLocation.latitude + (Math.random() * 0.0001 - 0.00005),
+      longitude: baseLocation.longitude + (Math.random() * 0.0001 - 0.00005),
+      timestamp: new Date(),
+      speed,
+    };
 
-      const newLocation = {
-        latitude: baseLocation.latitude + (Math.random() * 0.0001 - 0.00005),
-        longitude: baseLocation.longitude + (Math.random() * 0.0001 - 0.00005),
-        timestamp: new Date(),
-        speed,
-      };
+    const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
 
-      const vehicle = await Vehicle.findOne({ vehicleId: "VEHICLE_001" });
+    if (vehicle) {
+      const prevLocation = vehicle.currentLocation;
+      let distanceIncrement = 0;
 
-      if (vehicle) {
-        const prevLocation = vehicle.currentLocation;
-        let distanceIncrement = 0;
-
-        if (prevLocation) {
-          distanceIncrement = this.calculateDistance(
-            prevLocation.latitude,
-            prevLocation.longitude,
-            newLocation.latitude,
-            newLocation.longitude
-          );
-        }
-
-        // ✅ Ensure stats object exists
-        if (!vehicle.stats) {
-          vehicle.stats = {
-            currentSpeed: 0,
-            distanceCovered: 0,
-            batteryLevel: 100,
-            lastUpdated: new Date(),
-          };
-        }
-
-        vehicle.currentLocation = newLocation;
-        vehicle.locationHistory.push(newLocation);
-        vehicle.stats.currentSpeed = speed;
-        vehicle.stats.distanceCovered += distanceIncrement;
-        vehicle.stats.batteryLevel = Math.max(0, vehicle.stats.batteryLevel - 0.1);
-        vehicle.stats.lastUpdated = new Date();
-        vehicle.lastUpdated = new Date();
-
-        if (vehicle.locationHistory.length > 1000) {
-          vehicle.locationHistory = vehicle.locationHistory.slice(-1000);
-        }
-
-        await vehicle.save();
-        console.log(
-          `📍 Vehicle moved to: ${newLocation.latitude.toFixed(6)}, ${newLocation.longitude.toFixed(6)} at ${speed} km/h`
+      if (prevLocation) {
+        distanceIncrement = this.calculateDistance(
+          prevLocation.latitude,
+          prevLocation.longitude,
+          newLocation.latitude,
+          newLocation.longitude
         );
       }
 
-      this.currentLocationIndex++;
-    } catch (error) {
-      console.error("Error simulating movement:", error);
+      const updatedStats = vehicle.stats || {
+        currentSpeed: 0,
+        distanceCovered: 0,
+        batteryLevel: 100,
+        lastUpdated: new Date(),
+      };
+
+      updatedStats.currentSpeed = speed;
+      updatedStats.distanceCovered += distanceIncrement;
+      updatedStats.batteryLevel = Math.max(0, updatedStats.batteryLevel - 0.1);
+      updatedStats.lastUpdated = new Date();
+
+      await Vehicle.updateOne(
+        { vehicleId: "VEHICLE_001" },
+        {
+          $set: {
+            currentLocation: newLocation,
+            stats: updatedStats,
+            lastUpdated: new Date(),
+          },
+          $push: {
+            locationHistory: {
+              $each: [newLocation],
+              $slice: -1000, // Keep latest 1000 records
+            },
+          },
+        }
+      );
+
+      console.log(
+        `📍 Vehicle moved to: ${newLocation.latitude.toFixed(6)}, ${newLocation.longitude.toFixed(6)} at ${speed} km/h`
+      );
     }
+
+    this.currentLocationIndex++;
+  } catch (error) {
+    console.error("Error simulating movement:", error);
   }
+}
 
   calculateDistance(lat1, lon1, lat2, lon2) {
     const R = 6371;
