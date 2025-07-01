@@ -1,0 +1,91 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
+    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  background-color: #f8f9fa;
+  color: #333;
+}
+
+code {
+  font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
+    monospace;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+// Enhanced popup styles
+.vehicle-popup {
+  .leaflet-popup-content-wrapper {
+    border-radius: 12px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  }
+
+  .popup-content {
+    padding: 15px;
+    min-width: 280px;
+
+    h3 {
+      margin-bottom: 12px;
+      color: #007BFF;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .info-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      padding: 6px 0;
+      border-bottom: 1px solid #f0f0f0;
+
+      &:last-child {
+        border-bottom: none;
+        margin-bottom: 0;
+      }
+
+      .label {
+        font-weight: 600;
+        color: #666;
+        font-size: 14px;
+      }
+
+      .value {
+        font-weight: 500;
+        font-size: 14px;
+
+        &.battery-good {
+          color: #28a745;
+        }
+
+        &.battery-medium {
+          color: #ffc107;
+        }
+
+        &.battery-low {
+          color: #dc3545;
+        }
+
+        &.status-active {
+          color: #28a745;
+          font-weight: 600;
+        }
+
+        &.status-inactive {
+          color: #dc3545;
+          font-weight: 600;
+        }
+      }
+    }
+  }
+}
